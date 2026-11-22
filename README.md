@@ -54,6 +54,17 @@ npm run playtest -- --shots   # the same, saving pictures to shots/
 npm run shot -- shots/out.png "shot=main&ui=0" 1280 720 3     # an engine still
 ```
 
+## Deploy
+
+The game is one static file, so anything that serves `index.html` will do. The repository also
+carries a container set-up for Railway:
+
+- `Dockerfile` builds the page from source and serves it with `scripts/serve.mjs`
+  (no dependencies; brotli and gzip, ETag, a strict Content-Security-Policy, `/healthz`).
+- `railway.json` pins the Dockerfile builder and the health check.
+- `npm start` runs the same server locally on `PORT` (default 8080).
+- `SUNDOWN_URL=http://localhost:8080/ npm run playtest` plays a served copy instead of the file.
+
 ## The engine
 
 1. **Light chooses the letter.** Each material owns a palette of characters. At start-up the

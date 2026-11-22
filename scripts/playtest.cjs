@@ -10,7 +10,9 @@ const path = require('path');
   const logs = [];
   page.on('console', (m) => { if (m.type() === 'error' || /^cast /.test(m.text())) logs.push(`[${m.type()}] ` + m.text()); });
   page.on('pageerror', (e) => logs.push('[pageerror] ' + e.message));
-  await page.goto('file://' + path.resolve(__dirname, '..', 'index.html') + '?dpr=1&px=10');
+  // SUNDOWN_URL=http://localhost:8080 plays a served copy instead of the file on disk
+  const base = process.env.SUNDOWN_URL || 'file://' + path.resolve(__dirname, '..', 'index.html');
+  await page.goto(base + '?dpr=1&px=10');
   await page.waitForFunction(() => document.getElementById('boot').hidden || window.__error, null, { timeout: 180000 });
 
   await page.evaluate(() => {

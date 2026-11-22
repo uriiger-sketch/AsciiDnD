@@ -1,11 +1,12 @@
 {
   "name": "sundown-ascii-engine",
   "version": "0.1.0",
-  "description": "SUNDOWN - a light-reactive 3D ASCII graphics engine (WebGL2). Every visible thing is one of 95 printable characters.",
+  "description": "SUNDOWN - an alphabet western drawn entirely in ASCII, on a light-reactive 3D glyph engine (WebGL2).",
   "type": "module",
   "private": true,
   "scripts": {
     "build": "node scripts/build.mjs",
+    "start": "node scripts/serve.mjs",
     "shot": "node scripts/shot.cjs",
     "uitest": "node scripts/uitest.cjs",
     "playtest": "node scripts/playtest.cjs"
