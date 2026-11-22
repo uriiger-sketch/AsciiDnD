@@ -1,11 +1,11 @@
 // Renders the built page in headless Chromium and saves a screenshot.
-//   node scripts/shot.cjs out.png "shot=vista&time=18" [width] [height] [frames]
+//   node scripts/shot.cjs out.png "shot=main&ui=0" [width] [height] [frames] [deviceScaleFactor]
 const { chromium } = require('playwright');
 const path = require('path');
 (async () => {
-  const [out = 'shots/out.png', query = '', w = '1280', h = '720', frames = '3'] = process.argv.slice(2);
+  const [out = 'shots/out.png', query = '', w = '1280', h = '720', frames = '3', dsf = '1'] = process.argv.slice(2);
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-  const page = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: +dsf });
   const logs = [];
   page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
   page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
