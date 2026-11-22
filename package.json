@@ -7,7 +7,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "shot": "node scripts/shot.cjs",
-    "uitest": "node scripts/uitest.cjs"
+    "uitest": "node scripts/uitest.cjs",
+    "playtest": "node scripts/playtest.cjs"
   },
   "devDependencies": {
     "esbuild": "^0.24.0"

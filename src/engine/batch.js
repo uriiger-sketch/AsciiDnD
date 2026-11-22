@@ -88,6 +88,7 @@ layout(location = 4) in uvec4 a_info;   // glyph or ramp, flags, random, bone
 layout(location = 5) in vec4 a_aux;     // x: text level class (0 none, 1 fine, 2 middle, 3 coarse)
 uniform mat4 u_model;
 uniform vec4 u_lodP;                    // instances drawn (for tail fade), size scale
+uniform float u_fill;                   // extra light for things that must always read (people)
 #ifdef BONES
 uniform mat4 u_bones[${MAX_BONES}];
 #endif
@@ -143,6 +144,7 @@ void main(){
   vec3 irr = irradiance(P + N * 0.45, Nl, soft ? 0.5 : 0.12, sh);
   vec3 alb = a_color.rgb * a_color.rgb;
   vec3 lit = alb * irr * EXPOSURE;
+  lit += alb * u_fill;
   if ((flags & 64u) != 0u) lit = alb;
   float em = a_color.a * ((flags & 8u) != 0u ? NIGHT * (0.8 + 0.2 * sin(TIME * 7.0 + rnd * 40.0)) : 1.0);
   lit += alb * em * 3.2;
@@ -386,16 +388,17 @@ export class EntityLayer {
   _draw(engine, prog, occluder) {
     const gl = this.gl, cam = engine.cam;
     prog.use();
-    const uL = prog.u('u_lodP'), uB = prog.u('u_bones[0]'), uM = prog.u('u_model');
+    const uL = prog.u('u_lodP'), uB = prog.u('u_bones[0]'), uM = prog.u('u_model'), uF = prog.u('u_fill');
     let drawn = 0;
     for (const e of this.list) {
       if (e.hidden) continue;
       const x = e.model[12], y = e.model[13], z = e.model[14];
       const d = Math.hypot(x - cam.eye[0], y - cam.eye[1], z - cam.eye[2]);
-      const lod = occluder ? { n: e.template.count, scale: 1, fadeN: 1e12 } : lodFor(e.template.avg, d, engine.focal, 5 * engine.dpr, e.template.count);
+      const lod = occluder ? { n: e.template.count, scale: 1, fadeN: 1e12 } : lodFor(e.template.avg, d, engine.focal, (e.minPx || 5) * engine.dpr, e.template.count);
       if (lod.n < 1) continue;
       gl.uniformMatrix4fv(uM, false, e.model);
       gl.uniformMatrix4fv(uB, false, e.bones);
+      if (uF) gl.uniform1f(uF, e.fill || 0);
       gl.uniform4f(uL, lod.fadeN, lod.scale, 0, 0);
       gl.bindVertexArray(e.template.vao);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, lod.n);

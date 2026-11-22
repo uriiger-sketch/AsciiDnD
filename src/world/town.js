@@ -17,6 +17,8 @@ export class Builder {
     this.mesh = mesh;
     this.land = land;
     this.lights = [];
+    this.signs = []; // { id, text, faces: [{ c, u, n }], size, adv, col, emis, at }
+    this.rects = []; // wall footprints for collision: { x, z, hw, hd, yaw }
   }
 
   frame(x, z, yaw, y = null) {
@@ -72,15 +74,21 @@ export class Builder {
 
   // Big planar lettering centred at local (cx, cy, cz).
   sign(F, text, cx, cy, cz, u, n, size, col, emis = 0) {
-    const adv = size * 0.62, U = F.d(...u), Nn = F.d(...n);
-    const C = F.p(cx, cy, cz);
-    const x0 = (-(text.length - 1) * adv) / 2;
-    for (let i = 0; i < text.length; i++) {
-      if (text[i] === ' ') continue;
-      const t = x0 + i * adv;
-      this.text.push(C[0] + U[0] * t + Nn[0] * 0.06, C[1] + U[1] * t + Nn[1] * 0.06, C[2] + U[2] * t + Nn[2] * 0.06, size,
-        col[0], col[1], col[2], emis, Nn[0], Nn[1], Nn[2], 0, G(text[i]), FLAG.PLANAR);
-    }
+    const U = F.d(...u), Nn = F.d(...n), C = F.p(cx, cy, cz);
+    const face = { c: [C[0] + Nn[0] * 0.06, C[1] + Nn[1] * 0.06, C[2] + Nn[2] * 0.06], u: U, n: Nn };
+    let spec = this.signs.find((s) => s.id === text);
+    if (spec) spec.faces.push(face);
+    else this.signs.push((spec = { id: text, text, faces: [face], size, adv: size * 0.62, col, emis, at: null }));
+    return spec;
+  }
+
+  // A sign that stands on its own (a well, a headstone). Same id again adds another face.
+  signAt(id, text, c, u, n, size, col, at, emis = 0.1) {
+    const face = { c, u, n };
+    let spec = this.signs.find((s) => s.id === id);
+    if (spec) spec.faces.push(face);
+    else this.signs.push((spec = { id, text, faces: [face], size, adv: size * 0.62, col, emis, at }));
+    return spec;
   }
 
   // The classic frontier building: box, gable hidden behind a false front, porch, sign.
@@ -174,8 +182,11 @@ export class Builder {
       // signboard
       const board = [o.wall[0] * 0.35, o.wall[1] * 0.33, o.wall[2] * 0.3];
       this.mesh.quad(F.p(-bw / 2, sy - size * 0.62, d / 2 + 0.04), F.p(bw / 2, sy - size * 0.62, d / 2 + 0.04), F.p(bw / 2, sy + size * 0.62, d / 2 + 0.04), F.p(-bw / 2, sy + size * 0.62, d / 2 + 0.04), board);
-      this.sign(F, o.sign, 0, sy, d / 2 + 0.05, [1, 0, 0], [0, 0, 1], size, o.signColor || srgb(0xf0e2c0), 0.12);
+      const spec = this.sign(F, o.sign, 0, sy, d / 2 + 0.05, [1, 0, 0], [0, 0, 1], size, o.signColor || srgb(0xf0e2c0), 0.12);
+      const ap = F.p(0, 0, d / 2 + (o.porch !== false ? 5.2 : 3.2));
+      spec.at = [ap[0], ap[2]];
     }
+    this.rects.push({ x, z, hw: w / 2 + 0.25, hd: d / 2 + 0.25, yaw, h: hf + 0.6, porch: o.porch !== false ? 3.0 : 0 });
     this.land.stamp(x, z, w / 2 + 0.6, d / 2 + (o.porch !== false ? 1.9 : 0.6), yaw, 1);
     return F;
   }
@@ -229,6 +240,8 @@ export class Builder {
     const lp = F.p(0, 3.4, d / 2 + 1.2);
     this.lights.push({ pos: lp, radius: 16, color: [1.4, 0.8, 0.36], intensity: 0.9, flicker: 0.12, seed: 3, nightOnly: true });
     this.land.stamp(x, z, w / 2 + 2.5, d / 2 + 1, yaw, 1);
+    this.rects.push({ x, z, hw: w / 2 + 0.3, hd: d / 2 + 0.3, yaw, h: h + rise });
+    { const tp = F.p(tx, 0, tz); this.rects.push({ x: tp[0], z: tp[2], hw: tw / 2 + 0.2, hd: tw / 2 + 0.2, yaw, h: th + 2.4 }); }
     return F;
   }
 }

@@ -29,6 +29,7 @@ export const WEATHER = {
   cloudy: { cloud: 0.6, rain: 0, wind: 0.45, fog: 1.3, dust: 0.0, dim: 0.25, lightning: 0, wet: 0, heat: 0.4 },
   dust: { cloud: 0.3, rain: 0, wind: 1.0, fog: 7.0, dust: 1.0, dim: 0.45, lightning: 0, wet: 0, heat: 0.6 },
   storm: { cloud: 1.0, rain: 1.0, wind: 0.85, fog: 3.2, dust: 0.0, dim: 0.72, lightning: 1, wet: 1, heat: 0 },
+  drizzle: { cloud: 0.72, rain: 0, wind: 0.5, fog: 1.6, dust: 0.0, dim: 0.32, lightning: 0, wet: 0.55, heat: 0 },
   mist: { cloud: 0.35, rain: 0, wind: 0.12, fog: 9.0, dust: 0.0, dim: 0.2, lightning: 0, wet: 0.3, heat: 0 },
 };
 

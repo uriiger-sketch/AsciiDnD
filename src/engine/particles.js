@@ -230,7 +230,7 @@ void main(){
     vec3 p = vec3(h.x, h.y, h2.y) * box + vel * t;
     p = mod(p - centre + box * 0.5, box) + centre - box * 0.5;
     float gh = textureLod(u_th, p.xz * u_world.y + 0.5, 0.0).x;
-    if (p.y < gh) { gl_Position = CULL; return; }
+    if (p.y < gh || (u_b.z > 0.0 && distance(p.xz, u_b.xy) > u_b.z)) { gl_Position = CULL; return; }
     float len;
     streak(p, p - vel * (0.028 + 0.02 * h2.z), 0.5, 5.0, len);
     v_gl = vec4(h2.z < 0.7 ? ${G('|')}.0 : h2.z < 0.85 ? ${G('!')}.0 : ${G(':')}.0, 0.0, 0.0, -0.02);
@@ -245,6 +245,7 @@ void main(){
     vec3 hc = hash3(ivec3(gl_InstanceID, int(cyc), 5));
     vec2 snap = floor(u_camPos.xz / 16.0) * 16.0;
     vec2 xz = snap + (hc.xy - 0.5) * 110.0 + u_camFwd.xz * 26.0;
+    if (u_b.z > 0.0 && distance(xz, u_b.xy) > u_b.z) { gl_Position = CULL; return; }
     Terr T = terrainAt(xz);
     vec3 p = vec3(xz.x, max(T.h, T.water) + 0.05, xz.y);
     float d = distance(p, u_camPos.xyz);
@@ -320,6 +321,7 @@ export class Weather {
     this.prog = new Program(gl, 'weather', WVS, PFS);
     this.vao = gl.createVertexArray();
     this.fireflies = null; // {x, z, r}
+    this.localRain = null; // {x, z, r, amount}: rain that falls on one place only
     this.falls = null; // {x, y, z, bottom, dir:[x,z], width}
   }
   _draw(mode, count, amount, a, b) {
@@ -345,8 +347,10 @@ export class Weather {
     const e = engine.atmo.env;
     this.prog.use();
     this.gl.bindVertexArray(this.vao);
-    this._draw(0, 22000, e.rain);
-    this._draw(1, 5000, e.rain);
+    const lr = this.localRain, local = lr && lr.amount > e.rain;
+    const amt = local ? lr.amount : e.rain, lb = local ? [lr.x, lr.z, lr.r, 0] : [0, 0, 0, 0];
+    this._draw(0, 22000, amt, null, lb);
+    this._draw(1, 5000, amt, null, lb);
     if (this.fireflies && e.night > 0.05) this._draw(3, 420, 1, [this.fireflies.x, this.fireflies.z, this.fireflies.r, 0]);
   }
 }

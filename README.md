@@ -1,85 +1,96 @@
 # SUNDOWN
 
-**A light-reactive 3D ASCII graphics engine.** Every visible thing on screen is one of the
-95 printable ASCII characters, placed in a real 3D world, lit by a real sun, moon and firelight.
-WebGL2, no dependencies, one HTML file.
+**An alphabet western.** A role-playing game drawn entirely in the 95 printable ASCII characters,
+in a real 3D world lit by sun, moon and firelight. WebGL2, no dependencies, one HTML file.
 
-This is the graphics engine only. The showcase world is a first sketch of the game it is for:
-high desert, mesas, a frontier town called Sundown, a railroad, a box canyon with a waterfall,
-two camps and a rider.
+## The idea
 
-## Run it
+The world is set in type, so the game takes that literally.
 
-Open `index.html` in any modern browser (desktop or phone). It is fully self-contained.
+- **Your letters are everything you have.** They are your inventory, your skills and your voice.
+  A word can be used only if you can spell it from the letters in your case. You arrive with no
+  letters at all; the stationmaster writes you down as `NOBODY`, and those six letters are your
+  whole character sheet: `NO`, `NOD`, `DO`, `BOO`, `BOND`.
+- **A thing is what its sign says.** Letters on signs are real objects. Somebody has stolen the W
+  off the `WELL`, so it is an `ELL` (a measure of cloth) and gives no water. `MEND` a letter back
+  and the thing becomes itself again. `PRY` one off and it becomes something else: take the G
+  off `FEED & GRAIN` and it rains.
+- **Quests are spelling problems with consequences.** Earn the letters for a word, find the
+  missing letter, decide whose sign to spoil. Every stolen letter is noticed, and you can give
+  letters out of your own name.
 
-- drag to look around, pinch or scroll to move in, two fingers or right-drag to travel, `W A S D` to walk
-- **Shot** jumps between ten camera set-ups, **Tour** cuts between them on its own (space = next)
-- **Hour** scrubs the sun and moon, **Run day** lets a day pass in two and a half minutes
-- **Sky** switches weather: clear, clouds, dust storm, thunderstorm, mist
-- **More** has glyph size, underglow and light toggles
+## Chapter one: NOBODY
 
-To rebuild after changing the source:
+About 20 to 30 minutes. It grows from a one-word errand to a town-sized problem:
+
+1. Arrive with nothing. Get a name of sorts.
+2. Scare the crows off the oats (`BOO`).
+3. The `ELL`: earn `MEND` from the smith, ask a widow for a W, bring the well back.
+4. The `SALON`: with a question mark you can finally ask things. Find who has the O, or give one
+   of your own and become `NOBDY`.
+5. Fire at the livery. Buckets will not do it.
+6. A man in black takes the S off `SUNDOWN`. In a town called `UNDOWN`, the sun cannot set.
+
+Along the way: a dead man's hat, a tip jar nobody is watching, a store that sells consonants,
+a paper you cannot read until you can spell `READ`, and words nobody teaches you
+(`YODEL`, `BOOM`, `POEM`, `NAP`, `PRAY` ...). Tap your letters to try any word.
+
+## Play
+
+Open `index.html` in a modern browser, desktop or phone. Progress is kept on the device.
+
+- tap or click the ground to walk, tap a person or thing to go to it, drag to look, pinch or scroll to zoom
+- keyboard: `W A S D` walk, `E` / `Space` talk and continue, `1`-`9` choose, `J` journal
+- **UPPERCASE** actions are words you must be able to spell; lowercase ones are free
+- **Tour the land** on the title screen is the engine showcase: ten camera set-ups, time of day, weather
+
+## Build and test
 
 ```
 npm install
-npm run build          # writes index.html (standalone) and dist/artifact.html (body fragment)
-npm run shot -- shots/out.png "shot=main&ui=0" 1280 720 3   # headless screenshot
+npm run build        # writes index.html (standalone) and dist/artifact.html (body fragment)
+npm run playtest     # plays chapter one start to finish in headless Chromium, 20 checks
+npm run playtest -- --shots   # the same, saving pictures to shots/
+npm run shot -- shots/out.png "shot=main&ui=0" 1280 720 3     # an engine still
 ```
 
-## What is new here
+## The engine
 
-1. **Light chooses the letter.** Each material owns a small palette of characters (sandstone,
-   wood, hide, water ...). At start-up the engine rasterises the device's own monospace font,
-   measures the ink coverage of every glyph, and sorts each palette into a ramp. Per glyph, per
-   frame, the lit colour picks a level on that ramp. Shadows, sunsets, lantern light and lightning
-   literally rewrite the text of the world.
-2. **Glyphs are signed distance fields**, built at run time. They stay crisp at any size, their
-   stroke weight follows brightness, and neighbouring ramp levels *morph* into each other instead
-   of popping.
-3. **The ground is a glyph field with no stored glyphs.** A quadtree picks a few hundred tiles on
-   the CPU; the GPU derives every character from the tile id and `gl_InstanceID`: position,
-   material, light, wind, level of detail. Density on screen is constant from your boots to the
-   horizon, yet every glyph is anchored to a fixed place in the world (nothing swims).
-4. **Grass is free strokes.** Each blade is a `|` drawn along the projected direction of a blade
-   that leans with a gusting wind field and parts around anything that moves through it.
-5. **Shadows are height fields, not shadow cameras.** For every ground texel the engine stores
-   the height below which a point is in shadow. One lookup shadows anything at any height. A
-   coarse map covers the whole land (mesa shadows a kilometre long); a sharp one follows the
-   camera and takes every glyph object as an occluder, riders included.
-6. **Sculpted glyph objects.** Shapes are described as soft unions of distance-field primitives
-   and baked into a one-voxel shell of glyph cards with normals, baked ambient occlusion and bone
-   indices. Rows of the lattice are taller than wide, so a horse is typeset in lines of text
-   wrapped around a form. Near the silhouette the glyph becomes a stroke (`/ | \ -`) that follows
-   the outline.
-7. **Architecture is typeset.** A wall is a page of characters lying in its plane, generated in
-   three sizes; the shader shows whichever is legible at the current distance. Signs are words.
-8. **The sky is a terminal.** A fixed grid of cells behind the world: gradient, a sun of `@#O`
-   with a hand-drawn corona, a shaded moon with phase, twinkling stars, clouds from the same
-   field that shades the land.
-9. **Order-independent ink.** Dark "paper" geometry and backed glyph cards write depth; bare
-   ink is blended with `MAX`, so there is no sorting anywhere and every edge is anti-aliased.
-10. HDR finish: bloom, light shafts from the sun, heat shimmer, filmic tone map, a night grade
-    that turns moonlight blue and leaves firelight warm.
+1. **Light chooses the letter.** Each material owns a palette of characters. At start-up the
+   engine rasterises the device's own monospace font, measures the ink coverage of every glyph,
+   and sorts each palette into a ramp. Per glyph, per frame, the lit colour picks a level on it.
+2. **Glyphs are signed distance fields**, built at run time: crisp at any size, weight follows
+   brightness, neighbouring ramp levels morph instead of popping.
+3. **The ground is a glyph field with no stored glyphs.** A quadtree picks tiles on the CPU; the
+   GPU derives every character from the tile id and `gl_InstanceID`. Density on screen is
+   constant from your boots to the horizon, and every glyph is anchored to a place in the world.
+4. **Grass is free strokes** that lean with a gusting wind field and part around anything that moves.
+5. **Shadows are height fields.** Per ground texel, the height below which a point is in shadow.
+   One coarse map for the whole land, one sharp map that follows the camera and takes every
+   glyph object as an occluder.
+6. **Sculpted glyph objects.** Shapes are soft unions of distance-field primitives baked into a
+   one-voxel shell of glyph cards with normals, ambient occlusion and bone indices.
+7. **Architecture is typeset** in three sizes; the shader shows whichever is legible.
+8. **Live text.** Signs, names, flying letters and shouted words are written into the world
+   every frame by the same shaders, which is what lets the game take letters off walls.
+9. **The sky is a terminal**: a grid of cells with a sun of `@#O`, a phased moon, stars, clouds.
+10. Order-independent ink (`MAX` blend), HDR bloom, light shafts, heat shimmer, filmic grade.
 
 ## Layout
 
 ```
-src/engine/   atlas (SDF glyphs + ramps), glsl (shared lighting / LOD), terrain (glyph field),
-              batch (glyph objects, skeletons), sculpt (SDF baker), shadows, sky, particles
-              (fire, dust, rain, waterfall), post, atmosphere (sun, moon, weather), engine
-src/world/    land (terrain generator), props, town, actors (rider, tumbleweeds), world
-src/main.js   showcase: shot director, lightning, controls
-scripts/      build (esbuild -> single file), shot / uitest (headless Chromium)
+src/engine/   atlas, glsl, terrain, batch, sculpt, shadows, sky, particles, text, post, atmosphere
+src/world/    land (terrain), props, town (buildings + signs), people, actors (horses), world
+src/game/     letters (type case + lexicon), signs (editable signs), ui, game (core), chapter1, sfx
+src/tour.js   the engine showcase        src/main.js   boot, title, mode switching
+scripts/      build, playtest, shot, uitest, phoneshot
 ```
 
-## Using the engine for the game
+Writing more of the game: a chapter is one file like `src/game/chapter1.js`. It adds people
+(`g.addNpc`), things (`g.addThing` with a `verbs` table keyed by word), reacts to signs changing
+(`signChanged`), and reports the current objective. Words that work anywhere go in its `words`
+table; their descriptions go in `LEX` in `letters.js`.
 
-- `Sculpt` + `Template` + `EntityLayer`: new characters and creatures (up to 28 bones each).
-- `Builder.building({...})` in `src/world/town.js`: new buildings from a few numbers and a sign.
-- `Particles.emit(kind, ...)` and `KIND` in `src/engine/particles.js`: muzzle flashes, dust, smoke.
-- `engine.lights.push({ pos, radius, color, flicker })`: lanterns, fires, gunfire.
-- `engine.disturbers.push({ x, z, radius, strength })`: anything that should part the grass.
-- `Atmosphere.hour`, `Atmosphere.setWeather(name)`: time and weather.
-
-Verified in headless Chromium (software rasteriser). Not yet measured on physical phones or
-desktop GPUs; the page lowers resolution, then glyph density, if the frame rate drops.
+Verified in headless Chromium on a software rasteriser: the automated playthrough passes and
+there are no console errors. Not yet measured on physical phones or desktop GPUs; the page
+lowers resolution, then glyph density, if the frame rate drops.

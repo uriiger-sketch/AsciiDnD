@@ -13,7 +13,8 @@ const path = require('path');
     await page.waitForFunction(() => document.getElementById('boot').hidden || window.__error, null, { timeout: 120000 });
     await page.waitForFunction(() => window.__frames >= 2, null, { timeout: 120000 });
     // software rendering is too slow for pointer-level clicks; trigger the handlers directly
-    await page.evaluate(() => { for (const id of ['moreBtn', 'sky-storm', 'shot-main', 'fxShadow', 'fxShadow', 'play', 'play']) document.getElementById(id).click(); });
+    await page.evaluate(async () => { document.getElementById('tTour').click(); await new Promise((r) => setTimeout(r, 1500));
+      for (const id of ['moreBtn', 'sky-storm', 'shot-main', 'fxShadow', 'fxShadow', 'play', 'play']) document.getElementById(id).click(); });
     const f0 = await page.evaluate(() => window.__frames);
     await page.waitForFunction((n) => window.__frames >= n + 3, f0, { timeout: 180000 });
     await page.evaluate(() => { window.__pause = true; });

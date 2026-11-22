@@ -254,6 +254,46 @@ export function wagon() {
   return s.bake({ res: 0.12, clipY: 0.03, seed: 6 });
 }
 
+export function well() {
+  const s = new Sculpt();
+  const stone = { color: srgb(0x9d9285), ramp: RAMP.ROCK, flags: SOLID, k: 0.06 };
+  const wood = { color: COL.woodDark, ramp: RAMP.WOOD, flags: SOLID, k: 0.02 };
+  for (const y of [0.2, 0.52, 0.84]) s.torus([0, y, 0], [0, 1, 0], 0.95, 0.2, stone);
+  for (const x of [-1.08, 1.08]) s.capsule([x, 0, 0], [x, 2.55, 0], 0.1, wood);
+  s.capsule([-1.3, 2.55, 0], [1.3, 2.55, 0], 0.1, wood);
+  s.box([0, 2.9, 0], [1.5, 0.09, 0.8], 0.03, { color: COL.woodDark, ramp: RAMP.SHINGLE, flags: SOLID, k: 0 });
+  s.cylinder([0, 1.3, 0], [0, 1.66, 0], 0.2, { color: COL.wood, ramp: RAMP.WOOD, flags: SOLID, k: 0 });
+  s.capsule([0, 1.66, 0], [0, 2.5, 0], 0.07, { color: COL.woodPale, ramp: RAMP.HIDE, flags: SOLID, k: 0 });
+  return s.bake({ res: 0.1, clipY: 0.02, seed: 21 });
+}
+
+export function hayBale(seed = 1) {
+  const s = new Sculpt();
+  s.box([0, 0.32, 0], [0.62, 0.32, 0.34], 0.08, { color: srgb(0xcbab52), ramp: RAMP.HIDE, flags: SOLID, k: 0 });
+  return s.bake({ res: 0.12, clipY: 0.02, seed });
+}
+
+export function sack(seed = 1) {
+  const s = new Sculpt();
+  s.ellipsoid([0, 0.27, 0], [0.34, 0.27, 0.25], { color: srgb(0xb79c6c), ramp: RAMP.CLOTH, flags: SOLID, k: 0 });
+  return s.bake({ res: 0.11, clipY: 0.02, seed });
+}
+
+export function anvil() {
+  const s = new Sculpt();
+  const iron = { color: COL.iron, ramp: RAMP.METAL, flags: SOLID, k: 0.03 };
+  s.box([0, 0.3, 0], [0.22, 0.3, 0.2], 0.03, { color: COL.woodDark, ramp: RAMP.WOOD, flags: SOLID, k: 0 });
+  s.box([0, 0.72, 0], [0.36, 0.13, 0.15], 0.03, iron);
+  s.cone([0.36, 0.74, 0], [0.62, 0.78, 0], 0.11, 0.06, iron);
+  return s.bake({ res: 0.085, clipY: 0.02, seed: 8 });
+}
+
+export function headstone() {
+  const s = new Sculpt();
+  s.box([0, 0.55, 0], [0.62, 0.55, 0.11], 0.1, { color: srgb(0x8f8a84), ramp: RAMP.ROCK, flags: SOLID, k: 0 });
+  return s.bake({ res: 0.1, clipY: 0.02, seed: 14 });
+}
+
 export function tumbleweed(seed) {
   const s = new Sculpt();
   const chars = '%&#@*+xX';

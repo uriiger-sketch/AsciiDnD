@@ -113,7 +113,7 @@ void main(){
   vec3 irr = irradiance(p + n * 0.1, n, 0.15, sh);
   vec3 lit = (alb * irr * lmod + extra * sh) * EXPOSURE;
   vec3 ink; float lev = inkLevel(lit, ink);
-  if (!wet) { ink *= 0.7; lev *= 0.86; }
+  if (!wet) { float calm = mix(1.0, 0.6, T.mask.a); ink *= 0.7 * calm; lev *= 0.86 * mix(1.0, 0.82, T.mask.a); }
   float fog = fogAmount(p);
   vec3 ft = fogTint(-v);
   ink = mix(ink, ft, fog);

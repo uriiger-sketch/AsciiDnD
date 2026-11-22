@@ -9,6 +9,16 @@ import { Builder, buildTown } from './town.js';
 import * as P from './props.js';
 import { RAIL_Z, BOOTHILL, CREEK, POOL } from './land.js';
 
+// Where the first chapter happens.
+export const SPOT = {
+  well: [5, 1.5],
+  hay: [-89.6, -23.5],
+  sacks: [-86, -30],
+  anvil: [-76.6, -7.0],
+  grave: [-99, -67],
+  dig: [-131, -61],
+};
+
 export const PLACES = {
   town: [0, 0],
   saloon: [-44, -11],
@@ -52,6 +62,7 @@ export function buildWorld(gl, land, step = () => {}) {
     const a = r() * TAU, d = 9 + r() * 22;
     const x = BOOTHILL.x + 14 + Math.cos(a) * d * 1.2, z = BOOTHILL.z + 22 + Math.sin(a) * d * 0.8;
     const stone = r() < 0.35;
+    if (Math.hypot(x - SPOT.grave[0], z - SPOT.grave[1]) < 4) continue;
     cards.push(x, H(x, z) + 0.62, z, 1.35, stone ? 0.5 : 0.55, stone ? 0.5 : 0.45, stone ? 0.48 : 0.34, 0, 0, 0.5, 0.86, 0, G(stone ? 'n' : r() < 0.5 ? 't' : '+'), FLAG.TWO_SIDED);
   }
   // water tower, windmill
@@ -61,6 +72,31 @@ export function buildWorld(gl, land, step = () => {}) {
   const wm = P.windmill();
   place(wm, PLACES.windmill[0], PLACES.windmill[1], 0);
   land.stamp(PLACES.windmill[0], PLACES.windmill[1], 2, 2, 0, 0.9);
+  // --- the well, and the small furniture of the first chapter -----------------------------
+  {
+    const [wx, wz] = SPOT.well, wy = H(wx, wz);
+    place(P.well(), wx, wz, Math.PI / 2);
+    land.stamp(wx, wz, 1.6, 1.6, 0, 0.9);
+    const cream = srgb(0xf0e2c0), board = [0.05, 0.035, 0.025];
+    for (const s of [1, -1]) {
+      const xc = wx + s * 0.83;
+      mesh.quad([xc - s * 0.02, wy + 1.86, wz - 0.95], [xc - s * 0.02, wy + 1.86, wz + 0.95], [xc - s * 0.02, wy + 2.5, wz + 0.95], [xc - s * 0.02, wy + 2.5, wz - 0.95], board);
+      B.signAt('WELL', 'WELL', [xc, wy + 2.17, wz], [0, 0, -s], [s, 0, 0], 0.6, cream, [wx + 3.0, wz]);
+    }
+    const bale = P.hayBale(), sack = P.sack();
+    const [hx, hz] = SPOT.hay;
+    for (const [dx, dy, dz, yw] of [[0, 0, 0, 0.1], [1.35, 0, 0.1, -0.05], [0.6, 0.62, 0.05, 0.2], [0.1, 0, 0.8, 0.0], [1.4, 0, 0.9, 0.12], [0.7, 0.62, 0.85, -0.1], [0.65, 1.24, 0.45, 0.3]]) {
+      cards.append(bale, hx + dx, H(hx, hz) + dy, hz + dz, yw, 1, null);
+    }
+    const [sx, sz] = SPOT.sacks;
+    for (const [dx, dz] of [[0, 0], [0.7, 0.2], [0.3, 0.75], [-0.5, 0.5], [1.1, 0.9]]) cards.append(sack, sx + dx, H(sx, sz), sz + dz, r() * TAU, 1, null);
+    place(P.anvil(), SPOT.anvil[0], SPOT.anvil[1], 0.4);
+    lights.push({ pos: [SPOT.anvil[0] - 2.2, H(...SPOT.anvil) + 1.2, SPOT.anvil[1] - 1.6], radius: 9, color: [2.2, 0.8, 0.25], intensity: 0.7, flicker: 0.5, seed: 9 });
+    const [gx, gz] = SPOT.grave, gy = H(gx, gz);
+    place(P.headstone(), gx, gz, 0);
+    B.signAt('WALT', 'WALT', [gx, gy + 0.78, gz + 0.13], [1, 0, 0], [0, 0, 1], 0.34, srgb(0xe8e2d4), [gx, gz + 2.2], 0.05);
+    B.signAt('WREN', 'WREN', [gx, gy + 0.42, gz + 0.13], [1, 0, 0], [0, 0, 1], 0.26, srgb(0xcfc8b8), [gx, gz + 2.2], 0.03);
+  }
   lights.push(...B.lights);
 
   // --- railroad: the track is a line of # laid flat, and wires hum beside it --------------
@@ -131,6 +167,7 @@ export function buildWorld(gl, land, step = () => {}) {
       const x = Math.cos(a) * d, z = Math.sin(a) * d;
       if (S(land.pack, x, z) > 0.2 || land.waterAt(x, z) > H(x, z) - 0.2) continue;
       if (Math.hypot(x - PLACES.tipis[0], z - PLACES.tipis[1]) < 48 || Math.hypot(x - PLACES.camp[0], z - PLACES.camp[1]) < 16) continue;
+      if (Math.hypot(x - SPOT.grave[0], z - SPOT.grave[1]) < 5 || Math.hypot(x - SPOT.dig[0], z - SPOT.dig[1]) < 4) continue;
       const n = land.normalAt(x, z);
       if (n[1] < 0.93) continue;
       if (!test(x, z)) continue;
@@ -158,5 +195,5 @@ export function buildWorld(gl, land, step = () => {}) {
   statics.add('ink', ink, 13);
   statics.add('text', text, 17);
   mesh.upload();
-  return { statics, mesh, lights, fires, counts: { cards: cards.count, ink: ink.count + text.count } };
+  return { statics, mesh, lights, fires, signs: B.signs, rects: B.rects, counts: { cards: cards.count, ink: ink.count + text.count } };
 }

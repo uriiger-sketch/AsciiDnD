@@ -16,7 +16,8 @@ const PIV = {
   torso: [0, 1.62, 0], rhead: [0.03, 2.32, 0], laU: [0.02, 2.2, 0.25], laL: [0.18, 1.95, 0.3], raU: [0.02, 2.2, -0.25], raL: [0.18, 1.95, -0.3],
 };
 
-export function horseAndRider(coatHex = 0x7d4c2c, serape = [0xa33a2a, 0xd9c08a, 0x2f7f7a, 0xc98a2e]) {
+// o: { rider: false for a bare horse, hat: false, serape: null for none, shirt, bandana, hatCol }
+export function horseAndRider(coatHex = 0x7d4c2c, serape = [0xa33a2a, 0xd9c08a, 0x2f7f7a, 0xc98a2e], o = {}) {
   const s = new Sculpt();
   const coat = srgb(coatHex), black = [0.02, 0.018, 0.016];
   const h = (bone, k = 0.1) => ({ color: coat, ramp: RAMP.HIDE, flags: SOLID, bone, k });
@@ -46,9 +47,10 @@ export function horseAndRider(coatHex = 0x7d4c2c, serape = [0xa33a2a, 0xd9c08a, 
   leg(0.2, true, B.flU, B.flL); leg(-0.2, true, B.frU, B.frL);
   leg(0.21, false, B.hlU, B.hlL); leg(-0.21, false, B.hrU, B.hrL);
   // --- tack
-  const stripes = serape.map(srgb);
+  const stripes = (serape || [0x6a5a48, 0x8a7a62]).map(srgb);
   s.box([-0.05, 1.63, 0], [0.4, 0.06, 0.36], 0.03, { color: (x) => stripes[Math.abs(Math.floor(x * 9)) % stripes.length], ramp: RAMP.CLOTH, flags: SOLID, bone: B.body, k: 0.02 });
   s.box([-0.05, 1.7, 0], [0.28, 0.06, 0.24], 0.04, { color: srgb(0x4a2c1a), ramp: RAMP.HIDE, flags: SOLID, bone: B.body, k: 0.03 });
+  if (o.rider === false) return s.bake({ res: 0.06, seed: 99 });
   // --- rider
   const jeans = { color: srgb(0x2c3a5a), ramp: RAMP.CLOTH, flags: SOLID, bone: B.body, k: 0.05 };
   const boot = { color: srgb(0x2a1a12), ramp: RAMP.HIDE, flags: SOLID, bone: B.body, k: 0.02 };
@@ -57,19 +59,22 @@ export function horseAndRider(coatHex = 0x7d4c2c, serape = [0xa33a2a, 0xd9c08a, 
     s.cone([0.3, 1.44, 0.38 * z], [0.22, 0.98, 0.42 * z], 0.08, 0.07, jeans);
     s.cone([0.22, 0.98, 0.42 * z], [0.36, 0.88, 0.42 * z], 0.075, 0.065, boot);
   }
-  s.cone([0, 1.72, 0], [0.02, 2.24, 0], 0.2, 0.19, { color: srgb(0x8a7a62), ramp: RAMP.CLOTH, flags: SOLID, bone: B.torso, k: 0.05 });
+  const shirtCol = srgb(o.shirt ?? 0x8a7a62);
+  s.cone([0, 1.72, 0], [0.02, 2.24, 0], 0.2, 0.19, { color: shirtCol, ramp: RAMP.CLOTH, flags: SOLID, bone: B.torso, k: 0.05 });
   // serape: a striped cone of cloth that flutters
-  s.cone([0.0, 1.78, 0], [0.02, 2.3, 0], 0.46, 0.22, {
+  if (serape) s.cone([0.0, 1.78, 0], [0.02, 2.3, 0], 0.46, 0.22, {
     color: (x, y) => stripes[Math.abs(Math.floor(y * 11)) % stripes.length],
     ramp: RAMP.CLOTH, flags: FLAG.RAMP | FLAG.CONTOUR | FLAG.SWAY, sway: (x, y) => clamp((2.3 - y) * 0.5, 0, 0.3), bone: B.torso, k: 0,
   });
   const skin = { color: srgb(0xb9805a), ramp: RAMP.HIDE, flags: SOLID, bone: B.rhead, k: 0.03 };
   s.sphere([0.04, 2.5, 0], 0.13, skin);
-  s.sphere([0.05, 2.36, 0], 0.15, { color: srgb(0xa3271e), ramp: RAMP.CLOTH, flags: SOLID, bone: B.rhead, k: 0.02 });
-  const hat = { color: srgb(0x2e2218), ramp: RAMP.HIDE, flags: SOLID, bone: B.rhead, k: 0.02 };
-  s.cylinder([0.04, 2.58, 0], [0.04, 2.67, 0], 0.33, hat);
-  s.cylinder([0.04, 2.66, 0], [0.04, 2.84, 0], 0.15, hat);
-  const sleeve = (bone) => ({ color: srgb(0x8a7a62), ramp: RAMP.CLOTH, flags: SOLID, bone, k: 0.03 });
+  s.sphere([0.05, 2.36, 0], 0.15, { color: srgb(o.bandana ?? 0xa3271e), ramp: RAMP.CLOTH, flags: SOLID, bone: B.rhead, k: 0.02 });
+  const hat = { color: srgb(o.hatCol ?? 0x2e2218), ramp: RAMP.HIDE, flags: SOLID, bone: B.rhead, k: 0.02 };
+  if (o.hat !== false) {
+    s.cylinder([0.04, 2.58, 0], [0.04, 2.67, 0], 0.33, hat);
+    s.cylinder([0.04, 2.66, 0], [0.04, 2.84, 0], 0.15, hat);
+  } else s.sphere([0.01, 2.55, 0], 0.13, { color: srgb(0x2a2019), ramp: RAMP.CLOTH, flags: SOLID, bone: B.rhead, k: 0.01 });
+  const sleeve = (bone) => ({ color: shirtCol, ramp: RAMP.CLOTH, flags: SOLID, bone, k: 0.03 });
   for (const [z, u, l] of [[1, B.laU, B.laL], [-1, B.raU, B.raL]]) {
     s.cone([0.02, 2.2, 0.25 * z], [0.18, 1.95, 0.3 * z], 0.08, 0.07, sleeve(u));
     s.cone([0.18, 1.95, 0.3 * z], [0.45, 1.9, 0.13 * z], 0.07, 0.06, sleeve(l));
@@ -121,7 +126,7 @@ function spline(pts, t) {
 
 export class Rider {
   constructor(gl, layer, path, opts = {}) {
-    this.template = new Template(gl, horseAndRider(opts.coat, opts.serape), 3);
+    this.template = new Template(gl, horseAndRider(opts.coat, opts.serape, opts.look || {}), 3);
     this.e = layer.add({ template: this.template });
     this.path = path;
     this.u = opts.start || 0;
