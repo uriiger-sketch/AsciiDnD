@@ -1,0 +1,91 @@
+<title>Sundown ASCII Engine</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* layout: one full-bleed stage; a slate (top) and a control deck (bottom) float over it */
+  :root {
+    color-scheme: dark;
+    --night: #08070b;
+    --ink: #efe3c8;
+    --dim: #a8997c;
+    --ember: #ff9a3d;
+    --rule: rgba(239, 227, 200, 0.22);
+    --plate: rgba(10, 8, 12, 0.72);
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { background: var(--night); color: var(--ink); font-family: var(--mono); font-size: 12px; overflow: hidden; -webkit-user-select: none; user-select: none; }
+  #stage { position: fixed; inset: 0; }
+  #view { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  #view:active { cursor: grabbing; }
+  #fade { position: fixed; inset: 0; background: var(--night); opacity: 0; pointer-events: none; transition: opacity 0.6s ease; }
+  #fade.on { opacity: 1; }
+
+  #boot { position: fixed; inset: 0; display: grid; place-items: center; background: var(--night); text-align: center;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  #boot pre { margin: 0; font: inherit; line-height: 1.5; color: var(--dim); white-space: pre-wrap; }
+  #boot b { color: var(--ink); letter-spacing: 0.5em; font-size: 15px; }
+
+  .slate { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    pointer-events: none; text-shadow: 0 1px 6px #000; }
+  .mark { letter-spacing: 0.55em; font-size: 14px; font-weight: 700; }
+  .sub { color: var(--dim); letter-spacing: 0.08em; margin-top: 4px; }
+  #shotName { color: var(--ember); letter-spacing: 0.14em; margin-top: 4px; text-transform: uppercase; }
+  .read { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; line-height: 1.5; }
+
+  .deck { position: fixed; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 8px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); padding-top: 10px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: linear-gradient(to top, rgba(8, 7, 11, 0.88), rgba(8, 7, 11, 0)); }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+  .lab { color: var(--dim); letter-spacing: 0.12em; text-transform: uppercase; font-size: 10px; min-width: 52px; }
+  button { font: inherit; color: var(--ink); background: var(--plate); border: 1px solid var(--rule); padding: 6px 9px; letter-spacing: 0.06em; cursor: pointer; border-radius: 2px; }
+  button:hover { border-color: var(--ink); }
+  button:focus-visible, input:focus-visible { outline: 1px solid var(--ember); outline-offset: 2px; }
+  button[aria-pressed="true"] { color: var(--night); background: var(--ink); border-color: var(--ink); }
+  input[type="range"] { flex: 1 1 120px; min-width: 0; max-width: 360px; accent-color: var(--ember); height: 22px; }
+  #clock { font-variant-numeric: tabular-nums; min-width: 44px; }
+  #more { display: flex; flex-direction: column; gap: 8px; }
+  #toggle { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+  .deck.min > .row, .deck.min > #more { display: none; }
+  .deck.min { background: none; pointer-events: none; }
+  .hint { color: var(--dim); }
+  #shots, #weathers { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex: 1 1 0; min-width: 0; }
+  #shots::-webkit-scrollbar, #weathers::-webkit-scrollbar { display: none; }
+  #shots button, #weathers button { flex: 0 0 auto; white-space: nowrap; }
+  @media (max-width: 520px) { .lab { min-width: 36px; } .read .wide { display: none; } .sub { max-width: 14em; } }
+  @media (prefers-reduced-motion: reduce) { #fade { transition: none; } }
+</style>
+
+<div id="stage"><canvas id="view" aria-label="ASCII landscape"></canvas></div>
+<div id="fade"></div>
+
+<div class="slate" id="slate">
+  <div>
+    <div class="mark">SUNDOWN</div>
+    <div class="sub">95 characters. Nothing else.</div>
+    <div id="shotName"></div>
+  </div>
+  <div class="read" id="read"></div>
+</div>
+
+<div class="deck" id="deck">
+  <div class="row"><span class="lab">Shot</span><span id="shots" class="row"></span><button id="auto" aria-pressed="true" title="Cut between shots on its own">Tour</button></div>
+  <div class="row"><span class="lab">Hour</span><span id="clock">17:30</span><input id="hour" type="range" min="0" max="24" step="0.01" value="17.5" aria-label="Hour of day"><button id="play" aria-pressed="false" title="Let the day run">Run day</button></div>
+  <div class="row"><span class="lab">Sky</span><span id="weathers" class="row"></span></div>
+  <div id="more" hidden>
+    <div class="row"><span class="lab">Type</span><input id="px" type="range" min="5" max="16" step="0.5" value="9" aria-label="Glyph size"><span class="hint">glyph size</span></div>
+    <div class="row"><span class="lab">Paper</span><input id="under" type="range" min="0" max="0.4" step="0.01" value="0.11" aria-label="Underglow"><span class="hint">glow under the ink</span></div>
+    <div class="row"><span class="lab">Light</span><button id="fxBloom" aria-pressed="true">Bloom</button><button id="fxRays" aria-pressed="true">Shafts</button><button id="fxShadow" aria-pressed="true">Shadows</button></div>
+    <div class="row hint">Drag to look around. Pinch or scroll to move in. Two fingers or right-drag to travel.</div>
+  </div>
+  <div class="row"><button id="moreBtn" aria-pressed="false">More</button></div>
+</div>
+<button id="toggle" title="Show or hide the controls" aria-pressed="true">Hide</button>
+
+<div id="boot"><pre><b>SUNDOWN</b>
+
+<span id="bootLine">raising the land</span></pre></div>
+<script>/*BUNDLE*/</script>
