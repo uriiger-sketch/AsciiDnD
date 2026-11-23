@@ -1,4 +1,4 @@
-// Bundles the engine into single self-contained HTML files:
+// Bundles the game into single self-contained HTML files:
 //   index.html         - standalone page (open it directly, or serve it from anywhere)
 //   dist/artifact.html - body fragment for hosts that supply their own document skeleton
 import { build } from 'esbuild';
