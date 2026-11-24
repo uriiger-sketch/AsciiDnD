@@ -1,25 +1,25 @@
-// Screenshots of the real page in headless Chromium.
-//   node scripts/shot.cjs <out.png> [width] [height] [save.json] [js to run in page]
+// Renders the built page in headless Chromium and saves a screenshot.
+//   node scripts/shot.cjs out.png "shot=main&ui=0" [width] [height] [frames] [deviceScaleFactor]
 const { chromium } = require('playwright');
 const path = require('path');
-const fs = require('fs');
 (async () => {
-  const [out = 'shots/out.png', w = '1280', h = '720', save = '', js = ''] = process.argv.slice(2);
-  const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: 2, hasTouch: +w < 600, isMobile: +w < 600 });
+  const [out = 'shots/out.png', query = '', w = '1280', h = '720', frames = '3', dsf = '1'] = process.argv.slice(2);
+  const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+  const page = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: +dsf });
   const logs = [];
-  page.on('console', (m) => { if (m.type() === 'error') logs.push(m.text()); });
-  page.on('pageerror', (e) => logs.push('[pageerror] ' + e.message));
-  await page.goto((process.env.SUNDOWN_URL || 'file://' + path.resolve(__dirname, '..', 'index.html')));
-  await page.waitForFunction(() => window.__ui || window.__error, null, { timeout: 20000 });
-  if (save) {
-    const json = fs.readFileSync(save, 'utf8');
-    await page.evaluate((j) => { const ui = window.__ui; ui.g.restore(j); ui.g.cp = j; ui.mode = 'play'; }, json);
+  page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
+  page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
+  const url = 'file://' + path.resolve(__dirname, '..', 'index.html') + '?' + query + `&frames=${frames}&test=1`;
+  const t0 = Date.now();
+  await page.goto(url);
+  try {
+    await page.waitForFunction(() => window.__done === true || window.__error, null, { timeout: 240000 });
+  } catch (e) {
+    logs.push('[timeout] ' + e.message.split('\n')[0]);
   }
-  if (js) await page.evaluate(js);
-  await page.waitForTimeout(350);
+  const info = await page.evaluate(() => ({ err: window.__error || null, stats: window.__stats || null }));
   await page.screenshot({ path: out });
-  const info = await page.evaluate(() => ({ err: window.__error || null, cols: window.__ui && window.__ui.t.cols, rows: window.__ui && window.__ui.t.rows }));
-  console.log(out, JSON.stringify(info), logs.slice(0, 6).join(' | '));
+  console.log(logs.slice(0, 40).join('\n'));
+  console.log(JSON.stringify(info), `${Date.now() - t0} ms`);
   await browser.close();
 })();

@@ -1,17 +1,15 @@
 {
-  "name": "sundown",
+  "name": "sundown-ascii-engine",
   "version": "0.1.0",
-  "description": "SUNDOWN - a western tactical RPG drawn entirely as an upright ASCII character grid.",
+  "description": "SUNDOWN - an alphabet western drawn entirely in ASCII, on a light-reactive 3D glyph engine (WebGL2).",
   "type": "module",
   "private": true,
   "scripts": {
     "build": "node scripts/build.mjs",
     "start": "node scripts/serve.mjs",
-    "sim": "node scripts/sim.mjs",
-    "uitest": "node scripts/uitest.cjs",
     "shot": "node scripts/shot.cjs",
-    "map": "node scripts/dumpmap.mjs",
-    "test": "node scripts/sim.mjs 3 && node scripts/uitest.cjs"
+    "uitest": "node scripts/uitest.cjs",
+    "playtest": "node scripts/playtest.cjs"
   },
   "devDependencies": {
     "esbuild": "^0.24.0"
